@@ -1,5 +1,4 @@
 import networkx as nx
-from heapq import heappush, heappop
 import numpy as np
 
 def TwiceAroundTheTree(grafo):
@@ -43,16 +42,16 @@ def BranchAndBound(grafo):
             self.limites_arestas = limites_arestas
             self.custo = custo
             self.solucao = solucao
-        
         def __lt__(self, outro):
             if len(self.solucao) == len(outro.solucao):
                 return self.limite < outro.limite
             return len(self.solucao) > len(outro.solucao)
 
     def encontrar_limite_inicial(grafo):
-        limite = 0
         limites_arestas_iniciais = np.zeros((grafo.number_of_nodes(), 2), dtype=object)
-        for i in range(1, grafo.number_of_nodes() + 1):
+        percorrer = grafo.number_of_nodes() + 1
+        limite = 0
+        for i in range(1, percorrer):
             pesos = [grafo[i][j]['weight'] for j in grafo[i]]
             pesos_ordenados = sorted(pesos)[:2]
             min1, min2 = pesos_ordenados + [np.inf] * (2 - len(pesos_ordenados))
@@ -65,7 +64,11 @@ def BranchAndBound(grafo):
         novos_limites = np.array(limites_arestas)
         peso_aresta = grafo[solucao[-2]][solucao[-1]]['weight']
         soma = limite * 2
-        for no in solucao[-2:]:
+        percorre = []
+        if len(solucao) >= 2:
+            percorre.append(solucao[-2])
+        percorre.append(solucao[-1])
+        for no in percorre:
             indice_no = no - 1
             if novos_limites[indice_no][0] != peso_aresta:
                 soma -= novos_limites[indice_no][arestas_alteradas[indice_no]]
@@ -75,13 +78,13 @@ def BranchAndBound(grafo):
         return soma / 2, novos_limites
 
     limite_inicial, limites_arestas_iniciais = encontrar_limite_inicial(grafo)
-    raiz = Vertice(limite_inicial, limites_arestas_iniciais, 0, [1])  
-    heap = []
-    heappush(heap, raiz)
+    raiz = Vertice(limite_inicial, limites_arestas_iniciais, 0, [1])
+    lista_vertices = [raiz]
     melhor_custo = np.inf
     contador_de_vertices = 0
-    while heap:
-        vertice_atual = heappop(heap)
+    while lista_vertices:
+        vertice_atual = min(lista_vertices)
+        lista_vertices.remove(vertice_atual)
         contador_de_vertices += 1
         nivel = len(vertice_atual.solucao)
         if nivel > grafo.number_of_nodes():
@@ -95,7 +98,7 @@ def BranchAndBound(grafo):
                         novo_limite, novas_arestas = encontrar_limite(grafo, vertice_atual.solucao + [k], vertice_atual.limites_arestas, vertice_atual.limite)
                         if novo_limite < melhor_custo:
                             novo_vertice = Vertice(novo_limite, novas_arestas, vertice_atual.custo + peso_aresta, vertice_atual.solucao + [k])
-                            heappush(heap, novo_vertice)
+                            lista_vertices.append(novo_vertice)
             elif vertice_atual.limite < melhor_custo and nivel >= grafo.number_of_nodes() - 2:
                 for k in range(1, grafo.number_of_nodes() + 1):
                     if k not in vertice_atual.solucao:
@@ -106,5 +109,5 @@ def BranchAndBound(grafo):
                         custo = vertice_atual.custo + peso_aresta + prox_peso_aresta + ultimo_peso_aresta
                         if custo < melhor_custo:
                             novo_vertice = Vertice(custo, [], custo, vertice_atual.solucao + [k, ultimo_no, 1])
-                            heappush(heap, novo_vertice)
+                            lista_vertices.append(novo_vertice)
     return melhor_custo
