@@ -47,18 +47,6 @@ def BranchAndBound(grafo):
                 return self.limite < outro.limite
             return len(self.solucao) > len(outro.solucao)
 
-    def encontrar_limite_inicial(grafo):
-        limites_arestas_iniciais = np.zeros((grafo.number_of_nodes(), 2), dtype=object)
-        percorrer = grafo.number_of_nodes() + 1
-        limite = 0
-        for i in range(1, percorrer):
-            pesos = [grafo[i][j]['weight'] for j in grafo[i]]
-            pesos_ordenados = sorted(pesos)[:2]
-            min1, min2 = pesos_ordenados + [np.inf] * (2 - len(pesos_ordenados))
-            limites_arestas_iniciais[i - 1] = [min1, min2]
-            limite += min1 + min2
-        return limite / 2, limites_arestas_iniciais
-
     def encontrar_limite(grafo, solucao, limites_arestas, limite):
         arestas_alteradas = np.zeros(grafo.number_of_nodes(), dtype=int)
         novos_limites = np.array(limites_arestas)
@@ -76,8 +64,17 @@ def BranchAndBound(grafo):
                 arestas_alteradas[indice_no] += 1
                 novos_limites[indice_no][arestas_alteradas[indice_no]] = peso_aresta
         return soma / 2, novos_limites
-
-    limite_inicial, limites_arestas_iniciais = encontrar_limite_inicial(grafo)
+    
+    limites_arestas_iniciais = np.zeros((grafo.number_of_nodes(), 2), dtype=object)
+    percorrer = grafo.number_of_nodes() + 1
+    limite = 0
+    for i in range(1, percorrer):
+        pesos = [grafo[i][j]['weight'] for j in grafo[i]]
+        pesos_ordenados = sorted(pesos)[:2]
+        min1, min2 = pesos_ordenados + [np.inf] * (2 - len(pesos_ordenados))
+        limites_arestas_iniciais[i - 1] = [min1, min2]
+        limite += min1 + min2
+    limite_inicial = limite / 2
     raiz = Vertice(limite_inicial, limites_arestas_iniciais, 0, [1])
     lista_vertices = [raiz]
     melhor_custo = np.inf
